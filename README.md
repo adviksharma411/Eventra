@@ -3,8 +3,8 @@
 A Python + MySQL based application for managing events and booking tickets.
 
 ## Team
-- Advik
 - Aayushi
+- Advik
 
 ## Setup Instructions
 1. Install Python 3.10+ and MySQL 8.0
