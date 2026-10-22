@@ -1,26 +1,20 @@
+# db.py - Central place for database connection
+# Every other file will import from here, so we write it ONCE.
+
 import mysql.connector
-from mysql.connector import Error
-from db_config import DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
+from db_config import host, user, password, database
 
 
 def get_connection():
+    """Returns a fresh MySQL connection to the Eventra database."""
     try:
         conn = mysql.connector.connect(
-            host=DB_HOST,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            database=DB_NAME
+            host=host,
+            user=user,
+            password=password,
+            database=database
         )
         return conn
-    except Error as e:
-        print(f"[DB ERROR] Could not connect to MySQL: {e}")
+    except mysql.connector.Error as e:
+        print(f"❌ Database connection failed: {e}")
         return None
-
-
-if __name__ == "__main__":
-    c = get_connection()
-    if c:
-        print("Database connection OK.")
-        c.close()
-    else:
-        print("Database connection FAILED.")
