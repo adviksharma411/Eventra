@@ -5,6 +5,7 @@ Sidebar shell + all pre-auth (Login/Register) and user-facing screens.
 Admin screens live in gui_admin.py; they call build_shell() from here.
 """
 
+import platform
 import tkinter as tk
 from tkinter import ttk
 
@@ -23,7 +24,55 @@ from theme import (
 
 
 # ============================================================
-# DIALOGS — custom, always on top, auto-sized
+# FULLSCREEN HELPER — works on Windows AND Linux
+# ============================================================
+
+def _make_fullscreen(win):
+    """Force a Toplevel into true fullscreen — reliable on both OSes."""
+    win.update_idletasks()
+    sw = win.winfo_screenwidth()
+    sh = win.winfo_screenheight()
+
+    # Step 1: explicit geometry
+    win.geometry(f"{sw}x{sh}+0+0")
+
+    # Step 2: native fullscreen
+    try:
+        win.attributes("-fullscreen", True)
+    except tk.TclError:
+        pass
+
+    # Step 3: enforcement after WM settles (Windows sometimes ignores step 2)
+    def _enforce():
+        try:
+            if not win.winfo_exists():
+                return
+            w, h = win.winfo_width(), win.winfo_height()
+            if w < sw - 40 or h < sh - 40:
+                # Fullscreen didn't take — retry harder
+                win.geometry(f"{sw}x{sh}+0+0")
+                try:
+                    win.attributes("-fullscreen", False)
+                except Exception:
+                    pass
+                try:
+                    win.attributes("-fullscreen", True)
+                except Exception:
+                    pass
+                # Windows fallback if still small
+                if platform.system() == "Windows":
+                    try:
+                        win.state("zoomed")
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+    win.after(220, _enforce)
+
+
+# ============================================================
+# DIALOGS
 # ============================================================
 
 def show_confirm_dialog(parent, title, message, on_confirm,
@@ -185,7 +234,6 @@ def _nav_item(parent, emoji, label, command, active=False):
 
 
 def build_shell(parent, user, app, active_nav):
-    """Two-column layout: sidebar + content. Returns content frame."""
     parent.configure(bg=BG)
 
     sidebar = tk.Frame(parent, bg=BG_SIDEBAR, width=420)
@@ -255,7 +303,6 @@ def build_shell(parent, user, app, active_nav):
 
 
 def content_header(content, title, subtitle=None):
-    """Add a page header. Returns the frame so callers can add action buttons."""
     header = tk.Frame(content, bg=BG)
     header.pack(fill="x", padx=40, pady=(32, 0))
     left = tk.Frame(header, bg=BG)
@@ -279,7 +326,6 @@ class EventCard(tk.Frame):
         color = category_color(event["category"])
         tk.Frame(self, bg=color, height=4).pack(fill="x")
 
-        # Bottom section packed FIRST — always sticks to bottom
         bottom = tk.Frame(self, bg=BG_ELEVATED, padx=24, pady=20)
         bottom.pack(side="bottom", fill="x")
 
@@ -300,7 +346,6 @@ class EventCard(tk.Frame):
                           lambda: on_delete(event)).pack(
                               side="left", expand=True, fill="x", padx=(4, 0))
 
-        # Content fills space above bottom
         inner = tk.Frame(self, bg=BG_ELEVATED, padx=24, pady=22)
         inner.pack(fill="both", expand=True)
 
@@ -582,11 +627,11 @@ class UserEventsWindow:
 
 
 # ============================================================
-# SCROLLABLE MODAL HELPERS
+# SCROLLABLE MODAL WRAPPER
 # ============================================================
 
 def _modal_scroll(win, stripe_color):
-    """Fullscreen modal wrapper: fixed stripe on top, scrollable centered content."""
+    """Scrollable centered content area on a fullscreen window."""
     tk.Frame(win, bg=stripe_color, height=6).pack(fill="x")
 
     outer = tk.Frame(win, bg=BG_ELEVATED)
@@ -638,7 +683,7 @@ def show_booking_success(parent, info):
     win = tk.Toplevel(parent)
     win.title("Booking confirmed")
     win.configure(bg=BG_ELEVATED)
-    win.attributes("-fullscreen", True)
+    _make_fullscreen(win)
     win.bind("<Escape>", lambda e: win.destroy())
     win.grab_set()
 
@@ -679,7 +724,7 @@ class BookingModal(tk.Toplevel):
         self.event = event
         self.title("Book tickets")
         self.configure(bg=BG_ELEVATED)
-        self.attributes("-fullscreen", True)
+        _make_fullscreen(self)
         self.bind("<Escape>", lambda e: self.destroy())
         self.grab_set()
         self._build()
@@ -871,7 +916,7 @@ class UpiPaymentWindow(tk.Toplevel):
         self.amount = float(event["ticket_price"]) * qty
         self.title("UPI Payment")
         self.configure(bg=BG_ELEVATED)
-        self.attributes("-fullscreen", True)
+        _make_fullscreen(self)
         self.bind("<Escape>", lambda e: self.destroy())
         self.grab_set()
         self._build()
@@ -965,7 +1010,7 @@ class CardPaymentWindow(tk.Toplevel):
         self.amount = float(event["ticket_price"]) * qty
         self.title("Card Payment")
         self.configure(bg=BG_ELEVATED)
-        self.attributes("-fullscreen", True)
+        _make_fullscreen(self)
         self.bind("<Escape>", lambda e: self.destroy())
         self.grab_set()
         self._build()
