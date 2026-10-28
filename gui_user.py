@@ -323,14 +323,31 @@ class EventCard(tk.Frame):
     def __init__(self, parent, event, on_book=None, on_edit=None, on_delete=None):
         super().__init__(parent, bg=BG_ELEVATED,
                          highlightbackground=BORDER, highlightthickness=1)
-        color = category_color(event["category"])
-        tk.Frame(self, bg=color, height=4).pack(fill="x")
 
+        # Status-aware theming
+        is_cancelled = event.get("status") == "Cancelled"
+
+        if is_cancelled:
+            color      = "#52525B"   # muted grey
+            text_main  = TEXT_TERTIARY
+            text_sub   = "#52525B"
+            price_fg   = "#52525B"
+            stripe_fg  = "#3F3F46"
+        else:
+            color      = category_color(event["category"])
+            text_main  = TEXT_PRIMARY
+            text_sub   = TEXT_SECONDARY
+            price_fg   = color
+            stripe_fg  = color
+
+        tk.Frame(self, bg=stripe_fg, height=4).pack(fill="x")
+
+        # Bottom section packed first — sticks to bottom
         bottom = tk.Frame(self, bg=BG_ELEVATED, padx=24, pady=20)
         bottom.pack(side="bottom", fill="x")
 
         tk.Label(bottom, text=f"₹{float(event['ticket_price']):.0f}",
-                 font=FONT_PRICE, bg=BG_ELEVATED, fg=color, anchor="w"
+                 font=FONT_PRICE, bg=BG_ELEVATED, fg=price_fg, anchor="w"
                  ).pack(fill="x", pady=(0, 14))
 
         btn_row = tk.Frame(bottom, bg=BG_ELEVATED)
@@ -346,19 +363,31 @@ class EventCard(tk.Frame):
                           lambda: on_delete(event)).pack(
                               side="left", expand=True, fill="x", padx=(4, 0))
 
+        # Content area
         inner = tk.Frame(self, bg=BG_ELEVATED, padx=24, pady=22)
         inner.pack(fill="both", expand=True)
 
-        badge = tk.Frame(inner, bg=BG_ELEVATED)
-        badge.pack(fill="x", pady=(0, 14))
+        # Top row: category badge (left) + CANCELLED pill (right, if cancelled)
+        top_row = tk.Frame(inner, bg=BG_ELEVATED)
+        top_row.pack(fill="x", pady=(0, 14))
+
+        badge = tk.Frame(top_row, bg=BG_ELEVATED)
+        badge.pack(side="left")
         emoji_lbl = tk.Label(badge, text=category_emoji(event["category"]),
                              font=(FONT_FAMILY, 22), bg=BG_ELEVATED, fg=color)
         emoji_lbl.pack(side="left")
         tk.Label(badge, text=event["category"].upper(), font=FONT_LABEL,
                  bg=BG_ELEVATED, fg=color).pack(side="left", padx=(12, 0), pady=6)
 
+        if is_cancelled:
+            pill = tk.Frame(top_row, bg="#3F1D1D", padx=10, pady=3)
+            pill.pack(side="right")
+            tk.Label(pill, text="CANCELLED", font=(FONT_FAMILY, 8, "bold"),
+                     bg="#3F1D1D", fg="#FCA5A5").pack()
+
+        # Event name
         tk.Label(inner, text=event["event_name"], font=FONT_H3,
-                 bg=BG_ELEVATED, fg=TEXT_PRIMARY, anchor="w",
+                 bg=BG_ELEVATED, fg=text_main, anchor="w",
                  wraplength=360, justify="left").pack(fill="x")
 
         tk.Frame(inner, bg=BORDER, height=1).pack(fill="x", pady=16)
@@ -373,9 +402,8 @@ class EventCard(tk.Frame):
             tk.Label(r, text=icon_char, font=FONT_TINY, bg=BG_ELEVATED,
                      fg=TEXT_TERTIARY, width=2, anchor="w").pack(side="left")
             tk.Label(r, text=text, font=FONT_SMALL, bg=BG_ELEVATED,
-                     fg=TEXT_SECONDARY, anchor="w",
+                     fg=text_sub, anchor="w",
                      wraplength=320, justify="left").pack(side="left")
-
 
 # ============================================================
 # LOGIN / REGISTER

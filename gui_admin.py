@@ -1,27 +1,28 @@
 """
 gui_admin.py
 ------------
-Admin-only screens. Uses build_shell() from gui_user.py for consistency.
+Admin-only screens. Uses build_shell() from gui_user for consistent layout,
+and custom dialogs (show_confirm_dialog / show_toast) for feedback.
 """
 
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk
 
 from db import get_connection
 from events import list_events, search_events, add_event, update_event, delete_event
 from reports import (total_revenue, event_wise_bookings,
                      most_popular_events, user_booking_history)
 
-from theme import (
+from gui_user import (
     FONT_FAMILY, BG, BG_ELEVATED, BG_HOVER, BG_ACTIVE, BORDER, BORDER_STRONG,
     TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
-    ACCENT, ACCENT_DARK, DANGER, SUCCESS, WARNING,
-    FONT_DISPLAY, FONT_H1, FONT_H2, FONT_H3, FONT_BODY, FONT_SMALL,
-    FONT_TINY, FONT_LABEL, FONT_BUTTON,
+    ACCENT, ACCENT_DARK, ACCENT_LIGHT, DANGER, SUCCESS, WARNING,
+    FONT_H1, FONT_H2, FONT_H3, FONT_BODY, FONT_SMALL, FONT_TINY, FONT_LABEL,
+    FONT_BUTTON, FONT_PRICE,
     primary_button, secondary_button, danger_button, ghost_button,
-    modern_entry, category_color,
+    modern_entry, build_shell, content_header, EventCard,
+    show_confirm_dialog, show_toast,
 )
-from gui_user import build_shell, content_header, EventCard
 
 
 # ============================================================
@@ -110,23 +111,37 @@ class AdminEventsWindow:
                       on_delete=self._delete).grid(
                 row=r, column=c, padx=10, pady=10, sticky="nsew")
         for c in range(3):
-            self.inner.grid_columnconfigure(c, weight=1, minsize=300)
+            self.inner.grid_columnconfigure(c, weight=1, minsize=340)
 
     def _edit(self, ev):
         self.app.show_edit_event(ev)
 
     def _delete(self, ev):
-        if not messagebox.askyesno(
-                "Delete event",
-                f"Delete '{ev['event_name']}'?\n\n"
-                "All its bookings will be cancelled."):
-            return
-        ok, msg = delete_event(ev["event_id"])
-        if ok:
-            messagebox.showinfo("Deleted", msg)
-            self._load_all()
-        else:
-            messagebox.showerror("Error", msg)
+        def do_delete():
+            ok, msg = delete_event(ev["event_id"])
+            if ok:
+                show_toast(
+                    self.app.root,
+                    f"'{ev['event_name']}' cancelled. Hidden from users.",
+                    "success"
+                )
+                self._load_all()
+            else:
+                show_toast(self.app.root, msg, "error")
+
+        show_confirm_dialog(
+            self.app.root,
+            "Delete this event?",
+            f"You're about to delete '{ev['event_name']}'.\n\n"
+            f"This uses soft-delete: the event stays in the database with "
+            f"status 'Cancelled' so booking history is preserved. It will "
+            f"no longer appear to users. All active bookings for this event "
+            f"will also be cancelled.",
+            do_delete,
+            danger=True,
+            confirm_label="Yes, delete event",
+            cancel_label="Keep event",
+        )
 
     def destroy(self):
         for seq in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
@@ -263,13 +278,13 @@ class AddEditEventForm:
             if not ok:
                 self.err.config(text=f"✕  {res}")
                 return
-            messagebox.showinfo("Success", f"Event added (ID: {res}).")
+            show_toast(self.app.root, f"Event added (ID: {res}).", "success")
         else:
             for field in ["event_name", "category", "description", "venue",
                           "city", "event_date", "start_time",
                           "total_seats", "ticket_price"]:
                 update_event(self.event["event_id"], field, data[field])
-            messagebox.showinfo("Success", "Event updated.")
+            show_toast(self.app.root, "Event updated.", "success")
         self.app.show_admin_home()
 
     def destroy(self):
