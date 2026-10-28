@@ -23,13 +23,13 @@ from theme import (
 
 
 # ============================================================
-# DIALOGS — custom, always on top of fullscreen parents
+# DIALOGS — custom, always on top, auto-sized
 # ============================================================
 
 def show_confirm_dialog(parent, title, message, on_confirm,
                         danger=True, confirm_label="Confirm",
                         cancel_label="Cancel"):
-    """Styled confirmation dialog. Auto-sizes to content, sits above parents."""
+    """Styled confirmation dialog. Auto-sizes to content."""
     win = tk.Toplevel(parent)
     win.title(title)
     win.configure(bg=BG_ELEVATED)
@@ -39,14 +39,11 @@ def show_confirm_dialog(parent, title, message, on_confirm,
 
     accent = DANGER if danger else ACCENT
 
-    # Top accent stripe
     tk.Frame(win, bg=accent, height=4).pack(fill="x")
 
-    # Content wrapper
     body = tk.Frame(win, bg=BG_ELEVATED, padx=40, pady=36)
     body.pack(fill="both", expand=True)
 
-    # Icon + title row (icon in its own column, bigger)
     header = tk.Frame(body, bg=BG_ELEVATED)
     header.pack(fill="x", pady=(0, 20))
 
@@ -62,17 +59,14 @@ def show_confirm_dialog(parent, title, message, on_confirm,
              anchor="w", justify="left",
              wraplength=420).pack(fill="x", pady=(6, 0))
 
-    # Message body
     tk.Label(body, text=message,
              font=(FONT_FAMILY, 12),
              bg=BG_ELEVATED, fg=TEXT_SECONDARY,
              anchor="w", justify="left",
              wraplength=480).pack(fill="x", pady=(0, 32))
 
-    # Divider
     tk.Frame(body, bg=BORDER, height=1).pack(fill="x", pady=(0, 20))
 
-    # Buttons — cancel left, confirm right (standard modal order)
     row = tk.Frame(body, bg=BG_ELEVATED)
     row.pack(fill="x")
 
@@ -90,7 +84,6 @@ def show_confirm_dialog(parent, title, message, on_confirm,
     else:
         primary_button(row, confirm_label, do_confirm).pack(side="right")
 
-    # Auto-size — window grows to fit content
     win.update_idletasks()
     w = max(win.winfo_reqwidth(), 580)
     h = win.winfo_reqheight()
@@ -102,6 +95,7 @@ def show_confirm_dialog(parent, title, message, on_confirm,
     win.focus_force()
     win.attributes("-topmost", True)
     win.after(300, lambda: win.attributes("-topmost", False))
+
 
 def show_toast(parent, message, kind="success"):
     """Auto-sized toast at the bottom of the screen. Wraps long messages."""
@@ -121,12 +115,10 @@ def show_toast(parent, message, kind="success"):
     inner = tk.Frame(win, bg=BG_ELEVATED)
     inner.pack(fill="both", expand=True, padx=3, pady=3)
 
-    # Icon column
     tk.Label(inner, text=icon, font=(FONT_FAMILY, 22),
              bg=BG_ELEVATED, fg=color
              ).pack(side="left", padx=(24, 16))
 
-    # Message — wraps at 640px if long, otherwise stays single line
     tk.Label(inner, text=message,
              font=(FONT_FAMILY, 12),
              bg=BG_ELEVATED, fg=TEXT_PRIMARY,
@@ -134,7 +126,6 @@ def show_toast(parent, message, kind="success"):
              wraplength=640
              ).pack(side="left", padx=(0, 28), pady=18)
 
-    # Auto-size window to content
     win.update_idletasks()
     w = max(420, min(win.winfo_reqwidth(), 800))
     h = win.winfo_reqheight()
@@ -144,6 +135,7 @@ def show_toast(parent, message, kind="success"):
     win.geometry(f"{w}x{h}+{(sw - w) // 2}+{sh - h - 80}")
 
     win.after(3200, win.destroy)
+
 
 # ============================================================
 # SHELL — sidebar + content
@@ -200,7 +192,6 @@ def build_shell(parent, user, app, active_nav):
     sidebar.pack(side="left", fill="y")
     sidebar.pack_propagate(False)
 
-    # Brand
     brand = tk.Frame(sidebar, bg=BG_SIDEBAR)
     brand.pack(fill="x", padx=44, pady=(38, 0))
     tk.Label(brand, text="🎟", font=(FONT_FAMILY, 24), bg=BG_SIDEBAR,
@@ -210,7 +201,6 @@ def build_shell(parent, user, app, active_nav):
 
     tk.Frame(sidebar, bg=BORDER, height=1).pack(fill="x", padx=36, pady=30)
 
-    # Nav items
     if user["role"] == "admin":
         items = [
             ("Events",     "📅", app.show_admin_home),
@@ -227,7 +217,6 @@ def build_shell(parent, user, app, active_nav):
     for label, emoji, cmd in items:
         _nav_item(sidebar, emoji, label, cmd, active=(label == active_nav))
 
-    # Bottom: user info + sign out
     bottom = tk.Frame(sidebar, bg=BG_SIDEBAR)
     bottom.pack(side="bottom", fill="x", padx=28, pady=28)
 
@@ -290,16 +279,14 @@ class EventCard(tk.Frame):
         color = category_color(event["category"])
         tk.Frame(self, bg=color, height=4).pack(fill="x")
 
-        # === BOTTOM SECTION — packed FIRST so it sticks to card bottom ===
+        # Bottom section packed FIRST — always sticks to bottom
         bottom = tk.Frame(self, bg=BG_ELEVATED, padx=24, pady=20)
         bottom.pack(side="bottom", fill="x")
 
-        # Price (right above the button)
         tk.Label(bottom, text=f"₹{float(event['ticket_price']):.0f}",
                  font=FONT_PRICE, bg=BG_ELEVATED, fg=color, anchor="w"
                  ).pack(fill="x", pady=(0, 14))
 
-        # Buttons
         btn_row = tk.Frame(bottom, bg=BG_ELEVATED)
         btn_row.pack(fill="x")
         if on_book:
@@ -313,11 +300,10 @@ class EventCard(tk.Frame):
                           lambda: on_delete(event)).pack(
                               side="left", expand=True, fill="x", padx=(4, 0))
 
-        # === CONTENT — fills the space above the bottom section ===
+        # Content fills space above bottom
         inner = tk.Frame(self, bg=BG_ELEVATED, padx=24, pady=22)
         inner.pack(fill="both", expand=True)
 
-        # Category badge
         badge = tk.Frame(inner, bg=BG_ELEVATED)
         badge.pack(fill="x", pady=(0, 14))
         emoji_lbl = tk.Label(badge, text=category_emoji(event["category"]),
@@ -344,6 +330,7 @@ class EventCard(tk.Frame):
             tk.Label(r, text=text, font=FONT_SMALL, bg=BG_ELEVATED,
                      fg=TEXT_SECONDARY, anchor="w",
                      wraplength=320, justify="left").pack(side="left")
+
 
 # ============================================================
 # LOGIN / REGISTER
@@ -511,7 +498,7 @@ class UserEventsWindow:
     def _build(self):
         content = build_shell(self.frame, self.app.user, self.app, "Events")
 
-        header = content_header(
+        content_header(
             content,
             f"Welcome back, {self.app.user['name']}",
             "Browse and book events in seconds."
@@ -595,11 +582,59 @@ class UserEventsWindow:
 
 
 # ============================================================
-# BOOKING MODAL + PAYMENT SCREENS
+# SCROLLABLE MODAL HELPERS
+# ============================================================
+
+def _modal_scroll(win, stripe_color):
+    """Fullscreen modal wrapper: fixed stripe on top, scrollable centered content."""
+    tk.Frame(win, bg=stripe_color, height=6).pack(fill="x")
+
+    outer = tk.Frame(win, bg=BG_ELEVATED)
+    outer.pack(fill="both", expand=True)
+
+    canvas = tk.Canvas(outer, bg=BG_ELEVATED, highlightthickness=0)
+    canvas.pack(fill="both", expand=True)
+
+    content = tk.Frame(canvas, bg=BG_ELEVATED)
+    win_id = canvas.create_window((0, 0), window=content, anchor="nw")
+
+    def _resize(_=None):
+        ch = content.winfo_reqheight()
+        cvh = canvas.winfo_height()
+        cvw = canvas.winfo_width()
+        total = max(ch + 60, cvh)
+        canvas.itemconfigure(win_id, width=cvw, height=total)
+        canvas.configure(scrollregion=(0, 0, cvw, total))
+
+    content.bind("<Configure>", _resize)
+    canvas.bind("<Configure>", _resize)
+
+    inner = tk.Frame(content, bg=BG_ELEVATED)
+    inner.pack(expand=True, pady=30)
+
+    win.bind_all("<MouseWheel>",
+                 lambda e: canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"))
+    win.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-2, "units"))
+    win.bind_all("<Button-5>", lambda e: canvas.yview_scroll(2, "units"))
+
+    def _cleanup(e):
+        if e.widget == win:
+            try:
+                win.unbind_all("<MouseWheel>")
+                win.unbind_all("<Button-4>")
+                win.unbind_all("<Button-5>")
+            except Exception:
+                pass
+
+    win.bind("<Destroy>", _cleanup)
+    return inner
+
+
+# ============================================================
+# BOOKING SUCCESS
 # ============================================================
 
 def show_booking_success(parent, info):
-    """Fullscreen success popup — shared by Cash / UPI / Card flows."""
     win = tk.Toplevel(parent)
     win.title("Booking confirmed")
     win.configure(bg=BG_ELEVATED)
@@ -607,18 +642,15 @@ def show_booking_success(parent, info):
     win.bind("<Escape>", lambda e: win.destroy())
     win.grab_set()
 
-    tk.Frame(win, bg=SUCCESS, height=6).pack(fill="x")
-
-    wrap = tk.Frame(win, bg=BG_ELEVATED)
-    wrap.place(relx=0.5, rely=0.5, anchor="center")
+    wrap = _modal_scroll(win, SUCCESS)
 
     tk.Label(wrap, text="✓", font=(FONT_FAMILY, 72),
              bg=BG_ELEVATED, fg=SUCCESS).pack(pady=(0, 12))
     tk.Label(wrap, text="Booking confirmed",
-             font=(FONT_FAMILY, 32, "bold"),
+             font=(FONT_FAMILY, 30, "bold"),
              bg=BG_ELEVATED, fg=TEXT_PRIMARY).pack()
 
-    tk.Frame(wrap, bg=BORDER, height=1).pack(fill="x", pady=32)
+    tk.Frame(wrap, bg=BORDER, height=1).pack(fill="x", pady=28)
 
     body = tk.Frame(wrap, bg=BG_ELEVATED)
     body.pack()
@@ -626,15 +658,19 @@ def show_booking_success(parent, info):
                           ("Transaction", info["txn_id"]),
                           ("Total paid", f"₹{info['total']:.2f}")]:
         r = tk.Frame(body, bg=BG_ELEVATED)
-        r.pack(fill="x", pady=8)
+        r.pack(fill="x", pady=6)
         tk.Label(r, text=label, font=(FONT_FAMILY, 12), bg=BG_ELEVATED,
                  fg=TEXT_TERTIARY, width=13, anchor="w").pack(side="left")
         tk.Label(r, text=value, font=(FONT_FAMILY, 15, "bold"),
                  bg=BG_ELEVATED, fg=TEXT_PRIMARY, anchor="w"
                  ).pack(side="left")
 
-    primary_button(wrap, "Done", win.destroy).pack(pady=40)
+    primary_button(wrap, "Done", win.destroy).pack(pady=32)
 
+
+# ============================================================
+# BOOKING MODAL
+# ============================================================
 
 class BookingModal(tk.Toplevel):
     def __init__(self, parent, app, event):
@@ -650,30 +686,24 @@ class BookingModal(tk.Toplevel):
 
     def _build(self):
         color = category_color(self.event["category"])
+        wrap = _modal_scroll(self, color)
 
-        tk.Frame(self, bg=color, height=6).pack(fill="x")
-
-        wrap = tk.Frame(self, bg=BG_ELEVATED)
-        wrap.place(relx=0.5, rely=0.5, anchor="center")
-
-        # Header
         head = tk.Frame(wrap, bg=BG_ELEVATED)
         head.pack(fill="x")
         tk.Label(head, text=category_emoji(self.event["category"]),
-                 font=(FONT_FAMILY, 26), bg=BG_ELEVATED, fg=color
+                 font=(FONT_FAMILY, 24), bg=BG_ELEVATED, fg=color
                  ).pack(side="left", padx=(0, 14))
         col = tk.Frame(head, bg=BG_ELEVATED)
         col.pack(side="left", fill="x", expand=True)
         tk.Label(col, text=self.event["event_name"],
-                 font=(FONT_FAMILY, 24, "bold"),
+                 font=(FONT_FAMILY, 22, "bold"),
                  bg=BG_ELEVATED, fg=TEXT_PRIMARY, anchor="w",
                  wraplength=560, justify="left").pack(fill="x")
         tk.Label(col, text=self.event["category"].upper(), font=FONT_LABEL,
                  bg=BG_ELEVATED, fg=color, anchor="w").pack(fill="x")
 
-        tk.Frame(wrap, bg=BORDER, height=1).pack(fill="x", pady=20)
+        tk.Frame(wrap, bg=BORDER, height=1).pack(fill="x", pady=16)
 
-        # Info
         info = tk.Frame(wrap, bg=BG_ELEVATED)
         info.pack(fill="x")
         for label, value in [
@@ -684,20 +714,19 @@ class BookingModal(tk.Toplevel):
             ("Seats", f"{self.event['available_seats']} available"),
         ]:
             r = tk.Frame(info, bg=BG_ELEVATED)
-            r.pack(fill="x", pady=5)
+            r.pack(fill="x", pady=4)
             tk.Label(r, text=label.upper(), font=FONT_LABEL, bg=BG_ELEVATED,
                      fg=TEXT_TERTIARY, width=8, anchor="w").pack(side="left")
             tk.Label(r, text=value, font=FONT_SMALL, bg=BG_ELEVATED,
                      fg=TEXT_PRIMARY, anchor="w",
                      wraplength=520, justify="left").pack(side="left")
 
-        tk.Frame(wrap, bg=BORDER, height=1).pack(fill="x", pady=20)
+        tk.Frame(wrap, bg=BORDER, height=1).pack(fill="x", pady=16)
 
-        # Quantity
         tk.Label(wrap, text="NUMBER OF TICKETS", font=FONT_LABEL,
                  bg=BG_ELEVATED, fg=TEXT_SECONDARY).pack(anchor="w")
         ctr = tk.Frame(wrap, bg=BG_ELEVATED)
-        ctr.pack(pady=10, anchor="w")
+        ctr.pack(pady=8, anchor="w")
 
         self.qty = tk.IntVar(value=1)
         dec = tk.Button(ctr, text="−", font=(FONT_FAMILY, 18),
@@ -713,17 +742,16 @@ class BookingModal(tk.Toplevel):
 
         self.total_lbl = tk.Label(
             wrap, text=f"Total: ₹{float(self.event['ticket_price']):.2f}",
-            font=(FONT_FAMILY, 18, "bold"), bg=BG_ELEVATED, fg=color)
-        self.total_lbl.pack(pady=(10, 20), anchor="w")
+            font=(FONT_FAMILY, 16, "bold"), bg=BG_ELEVATED, fg=color)
+        self.total_lbl.pack(pady=(8, 16), anchor="w")
 
-        # Payment tiles
         tk.Label(wrap, text="PAYMENT METHOD", font=FONT_LABEL,
                  bg=BG_ELEVATED, fg=TEXT_SECONDARY
-                 ).pack(anchor="w", pady=(0, 12))
+                 ).pack(anchor="w", pady=(0, 10))
 
         self.pay = tk.StringVar(value="UPI")
         pay_row = tk.Frame(wrap, bg=BG_ELEVATED)
-        pay_row.pack(pady=(0, 18), anchor="w")
+        pay_row.pack(pady=(0, 14), anchor="w")
 
         self._pay_tiles = {}
 
@@ -788,7 +816,7 @@ class BookingModal(tk.Toplevel):
         self.err.pack(pady=8)
 
         row = tk.Frame(wrap, bg=BG_ELEVATED)
-        row.pack(pady=14)
+        row.pack(pady=12)
         primary_button(row, "Confirm booking",
                        self._confirm).pack(side="left", padx=(0, 10))
         secondary_button(row, "Cancel", self.destroy).pack(side="left")
@@ -830,9 +858,11 @@ class BookingModal(tk.Toplevel):
         self.app.show_user_home()
 
 
-class UpiPaymentWindow(tk.Toplevel):
-    """Fake UPI payment screen — no real gateway."""
+# ============================================================
+# UPI PAYMENT
+# ============================================================
 
+class UpiPaymentWindow(tk.Toplevel):
     def __init__(self, parent, app, event, qty):
         super().__init__(parent)
         self.app = app
@@ -847,22 +877,19 @@ class UpiPaymentWindow(tk.Toplevel):
         self._build()
 
     def _build(self):
-        tk.Frame(self, bg=ACCENT, height=6).pack(fill="x")
+        wrap = _modal_scroll(self, ACCENT)
 
-        wrap = tk.Frame(self, bg=BG_ELEVATED)
-        wrap.place(relx=0.5, rely=0.5, anchor="center")
-
-        tk.Label(wrap, text="📱", font=(FONT_FAMILY, 64),
+        tk.Label(wrap, text="📱", font=(FONT_FAMILY, 56),
                  bg=BG_ELEVATED, fg=ACCENT).pack()
-        tk.Label(wrap, text="Pay with UPI", font=(FONT_FAMILY, 28, "bold"),
-                 bg=BG_ELEVATED, fg=TEXT_PRIMARY).pack(pady=(10, 4))
+        tk.Label(wrap, text="Pay with UPI", font=(FONT_FAMILY, 26, "bold"),
+                 bg=BG_ELEVATED, fg=TEXT_PRIMARY).pack(pady=(8, 4))
         tk.Label(wrap,
                  text=f"{self.event['event_name']}  ·  {self.qty} ticket(s)",
                  font=FONT_SMALL, bg=BG_ELEVATED, fg=TEXT_SECONDARY).pack()
 
         tk.Label(wrap, text=f"₹{self.amount:.2f}",
-                 font=(FONT_FAMILY, 44, "bold"),
-                 bg=BG_ELEVATED, fg=TEXT_PRIMARY).pack(pady=(20, 28))
+                 font=(FONT_FAMILY, 40, "bold"),
+                 bg=BG_ELEVATED, fg=TEXT_PRIMARY).pack(pady=(16, 22))
 
         tk.Label(wrap, text="YOUR UPI ID", font=FONT_LABEL,
                  bg=BG_ELEVATED, fg=TEXT_SECONDARY, anchor="w"
@@ -884,7 +911,7 @@ class UpiPaymentWindow(tk.Toplevel):
         tk.Label(wrap,
                  text="This is a simulated payment. No real money is charged.",
                  font=FONT_TINY, bg=BG_ELEVATED, fg=TEXT_TERTIARY
-                 ).pack(pady=(28, 0))
+                 ).pack(pady=(24, 0))
 
         self.upi_entry.focus_set()
         self.upi_entry.bind("<Return>", lambda e: self._pay())
@@ -902,10 +929,7 @@ class UpiPaymentWindow(tk.Toplevel):
         for w in self.winfo_children():
             w.destroy()
 
-        tk.Frame(self, bg=ACCENT, height=6).pack(fill="x")
-        wrap = tk.Frame(self, bg=BG_ELEVATED)
-        wrap.place(relx=0.5, rely=0.5, anchor="center")
-
+        wrap = _modal_scroll(self, ACCENT)
         tk.Label(wrap, text="⏳", font=(FONT_FAMILY, 64),
                  bg=BG_ELEVATED, fg=ACCENT).pack()
         tk.Label(wrap, text="Processing payment...",
@@ -928,9 +952,11 @@ class UpiPaymentWindow(tk.Toplevel):
         self.app.show_user_home()
 
 
-class CardPaymentWindow(tk.Toplevel):
-    """Fake card payment screen — no real gateway."""
+# ============================================================
+# CARD PAYMENT
+# ============================================================
 
+class CardPaymentWindow(tk.Toplevel):
     def __init__(self, parent, app, event, qty):
         super().__init__(parent)
         self.app = app
@@ -945,42 +971,36 @@ class CardPaymentWindow(tk.Toplevel):
         self._build()
 
     def _build(self):
-        tk.Frame(self, bg=ACCENT, height=6).pack(fill="x")
+        wrap = _modal_scroll(self, ACCENT)
 
-        wrap = tk.Frame(self, bg=BG_ELEVATED)
-        wrap.place(relx=0.5, rely=0.5, anchor="center")
-
-        tk.Label(wrap, text="💳", font=(FONT_FAMILY, 64),
+        tk.Label(wrap, text="💳", font=(FONT_FAMILY, 56),
                  bg=BG_ELEVATED, fg=ACCENT).pack()
-        tk.Label(wrap, text="Pay with Card", font=(FONT_FAMILY, 28, "bold"),
-                 bg=BG_ELEVATED, fg=TEXT_PRIMARY).pack(pady=(10, 4))
+        tk.Label(wrap, text="Pay with Card", font=(FONT_FAMILY, 26, "bold"),
+                 bg=BG_ELEVATED, fg=TEXT_PRIMARY).pack(pady=(8, 4))
         tk.Label(wrap,
                  text=f"{self.event['event_name']}  ·  {self.qty} ticket(s)",
                  font=FONT_SMALL, bg=BG_ELEVATED, fg=TEXT_SECONDARY).pack()
 
         tk.Label(wrap, text=f"₹{self.amount:.2f}",
-                 font=(FONT_FAMILY, 44, "bold"),
-                 bg=BG_ELEVATED, fg=TEXT_PRIMARY).pack(pady=(20, 24))
+                 font=(FONT_FAMILY, 40, "bold"),
+                 bg=BG_ELEVATED, fg=TEXT_PRIMARY).pack(pady=(16, 20))
 
-        # Card number
         tk.Label(wrap, text="CARD NUMBER", font=FONT_LABEL,
                  bg=BG_ELEVATED, fg=TEXT_SECONDARY, anchor="w"
                  ).pack(fill="x", pady=(0, 6))
         self.num_wrap, self.num_entry = modern_entry(wrap, width=34)
-        self.num_wrap.pack(fill="x", pady=(0, 14))
+        self.num_wrap.pack(fill="x", pady=(0, 12))
         self.num_entry.insert(0, "4242 4242 4242 4242")
 
-        # Name on card
         tk.Label(wrap, text="NAME ON CARD", font=FONT_LABEL,
                  bg=BG_ELEVATED, fg=TEXT_SECONDARY, anchor="w"
                  ).pack(fill="x", pady=(0, 6))
         self.name_wrap, self.name_entry = modern_entry(wrap, width=34)
-        self.name_wrap.pack(fill="x", pady=(0, 14))
+        self.name_wrap.pack(fill="x", pady=(0, 12))
         self.name_entry.insert(0, self.app.user["name"].upper())
 
-        # Expiry + CVV
         row = tk.Frame(wrap, bg=BG_ELEVATED)
-        row.pack(fill="x", pady=(0, 14))
+        row.pack(fill="x", pady=(0, 12))
 
         left = tk.Frame(row, bg=BG_ELEVATED)
         left.pack(side="left", fill="x", expand=True, padx=(0, 8))
@@ -1001,7 +1021,7 @@ class CardPaymentWindow(tk.Toplevel):
 
         self.err = tk.Label(wrap, text="", font=FONT_SMALL,
                              bg=BG_ELEVATED, fg=DANGER)
-        self.err.pack(pady=(6, 14))
+        self.err.pack(pady=(6, 12))
 
         row = tk.Frame(wrap, bg=BG_ELEVATED)
         row.pack()
@@ -1012,7 +1032,7 @@ class CardPaymentWindow(tk.Toplevel):
         tk.Label(wrap,
                  text="This is a simulated payment. No real money is charged.",
                  font=FONT_TINY, bg=BG_ELEVATED, fg=TEXT_TERTIARY
-                 ).pack(pady=(28, 0))
+                 ).pack(pady=(24, 0))
 
         self.num_entry.focus_set()
 
@@ -1043,10 +1063,7 @@ class CardPaymentWindow(tk.Toplevel):
         for w in self.winfo_children():
             w.destroy()
 
-        tk.Frame(self, bg=ACCENT, height=6).pack(fill="x")
-        wrap = tk.Frame(self, bg=BG_ELEVATED)
-        wrap.place(relx=0.5, rely=0.5, anchor="center")
-
+        wrap = _modal_scroll(self, ACCENT)
         tk.Label(wrap, text="🔒", font=(FONT_FAMILY, 64),
                  bg=BG_ELEVATED, fg=ACCENT).pack()
         tk.Label(wrap, text="Verifying card...",
@@ -1159,6 +1176,7 @@ class MyBookingsWindow:
             do_cancel,
             danger=True,
             confirm_label="Yes, cancel booking",
+            cancel_label="Keep booking",
         )
 
     def destroy(self):
