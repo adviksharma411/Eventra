@@ -4,9 +4,27 @@ import tkinter as tk
 from theme import setup_styles, BG, WINDOW_W, WINDOW_H
 
 
+# ============================================================
+# DPI / SCALING
+# ============================================================
+
+def _detect_windows_dpi():
+    """Query real DPI from Windows API (more reliable than Tk on Windows)."""
+    try:
+        from ctypes import windll
+        hdc = windll.user32.GetDC(0)
+        dpi = windll.gdi32.GetDeviceCaps(hdc, 88)  # LOGPIXELSX
+        windll.user32.ReleaseDC(0, hdc)
+        if dpi and dpi > 0:
+            return dpi
+    except Exception:
+        pass
+    return 96  # fallback: standard 100%
+
+
 def _setup_dpi(root):
-    """Configure DPI scaling per OS so UI is sized correctly on all laptops."""
-    # Manual override via env var (for tuning): EVENTRA_SCALING=1.5 python main.py
+    """Configure DPI scaling per OS. Ensures comfortable font size everywhere."""
+    # Manual override via env var: EVENTRA_SCALING=1.75 python main.py
     try:
         override = float(os.environ.get("EVENTRA_SCALING", "0"))
         if override > 0:
@@ -18,27 +36,35 @@ def _setup_dpi(root):
     _OS = platform.system()
     try:
         if _OS == "Windows":
-            # Tell Windows we handle DPI ourselves (prevents double-scaling / blur)
+            # Tell Windows we handle DPI (prevents blurry text)
             try:
                 from ctypes import windll
-                windll.shcore.SetProcessDpiAwareness(1)  # system DPI aware
+                try:
+                    windll.shcore.SetProcessDpiAwareness(2)  # per-monitor (Win 8.1+)
+                except Exception:
+                    windll.user32.SetProcessDPIAware()       # legacy fallback
             except Exception:
                 pass
 
-            # Set Tk scaling from actual screen DPI (96 = 100%, 144 = 150%)
-            dpi = root.winfo_fpixels("1i")
-            root.tk.call("tk", "scaling", dpi / 72.0)
+            dpi = _detect_windows_dpi()
+            scaling = dpi / 72.0
+            # Floor at 1.5 so text is never tiny on Windows laptops
+            root.tk.call("tk", "scaling", max(scaling, 1.5))
 
         elif _OS == "Darwin":
             # macOS handles DPI natively — leave default
             pass
 
         else:
-            # Linux / Ubuntu — force good base scaling
+            # Linux / Ubuntu
             root.tk.call("tk", "scaling", 1.35)
     except Exception:
         pass
 
+
+# ============================================================
+# APP
+# ============================================================
 
 class EventraApp:
     def __init__(self):
@@ -67,7 +93,7 @@ class EventraApp:
                 pass
             self.current = None
 
-    # Auth
+    # ---- Auth ----
     def show_login(self):
         self._clear()
         self.user = None
@@ -86,7 +112,7 @@ class EventraApp:
         else:
             self.show_user_home()
 
-    # User
+    # ---- User ----
     def show_user_home(self):
         self._clear()
         from gui_user import UserEventsWindow
@@ -97,7 +123,7 @@ class EventraApp:
         from gui_user import MyBookingsWindow
         self.current = MyBookingsWindow(self.root, self)
 
-    # Admin
+    # ---- Admin ----
     def show_admin_home(self):
         self._clear()
         from gui_admin import AdminEventsWindow
@@ -128,6 +154,7 @@ class EventraApp:
         from gui_admin import ReportsWindow
         self.current = ReportsWindow(self.root, self)
 
+    # ---- Misc ----
     def logout(self):
         self.show_login()
 
