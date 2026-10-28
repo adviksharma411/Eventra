@@ -190,3 +190,12 @@ def category_color(category):
 
 def category_emoji(category):
     return CATEGORY_EMOJI.get(category, "🎉")
+
+def center_window(win, w, h):
+    """Center a Toplevel window on the screen."""
+    win.update_idletasks()
+    sw = win.winfo_screenwidth()
+    sh = win.winfo_screenheight()
+    x = (sw - w) // 2
+    y = (sh - h) // 2
+    win.geometry(f"{w}x{h}+{x}+{y}")

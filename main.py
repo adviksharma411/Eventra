@@ -13,7 +13,12 @@ class EventraApp:
             pass
 
         self.root.title("Eventra — Event Management & Ticketing")
-        self.root.geometry(f"{WINDOW_W}x{WINDOW_H}")
+
+        # Launch maximized
+        sw = self.root.winfo_screenwidth()
+        sh = self.root.winfo_screenheight()
+        self.root.geometry(f"{sw}x{sh}+0+0")
+
         self.root.minsize(1100, 700)
         self.root.configure(bg=BG)
         setup_styles(self.root)
