@@ -1,7 +1,7 @@
 # Eventra
 
 Event Management & Ticketing System — Python 3 + Tkinter + MySQL.
-Class 12 project by **Advik** and **Aayushi**.
+Class 12 project by **Aayushi** and **Advik**.
 
 ## Features
 
